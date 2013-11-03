@@ -1,0 +1,136 @@
+<html>
+<head>
+	<link rel="stylesheet" href="css/style.css">
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	<script>
+		var moveDelay = 250;
+		var intervalDelay = 150;
+		var originalDelay = moveDelay;
+		var timeoutId;
+		function moveLayers(factor) {
+			$layers.each(function (ix, element) {
+				$element = $(element);
+				var speed = $element.data('layer-speed');
+				var bgPosX = parseInt($element.css('background-position-x'));
+				$element.animate({'background-position-x' : (bgPosX - (factor * speed)) + '%'}, {duration : moveDelay, queue: false} , 'linear');
+				
+			});
+			if (moveDelay > 100) {
+				moveDelay -= 20;	
+			}
+			timeoutId = setTimeout(function() {moveLayers(factor)}, moveDelay - 50);
+			console.log(timeoutId);
+		}
+		$(document).ready(function() {
+			$layers = $('div[data-layer-speed]');
+			$contents = $('#content div');
+			var $skyline = $('#skyline');
+			var offset = 0;
+			
+			$('a.back').mousedown(function(e) {
+				e.preventDefault();
+				originalDelay = moveDelay;
+				moveLayers(1);
+				shiftContent(1);
+			}).mouseup(function() {
+				clearTimeout(timeoutId);
+				setTimeout(originalDelay, function() {clearTimeout(timeoutId)});
+				moveDelay = originalDelay;
+			});
+			
+			
+			$('a.forward').mousedown(function(e) {
+				e.preventDefault();
+				originalDelay = moveDelay;
+				moveLayers(-1);
+				shiftContent(-1);
+			}).mouseup(function() {
+				clearTimeout(timeoutId);
+				setTimeout(originalDelay, function() {clearTimeout(timeoutId)});
+				moveDelay = originalDelay;
+			});
+			
+			$('a.up').click(function(e) {
+				e.preventDefault();
+				$('a.up').css('display', 'none');
+				$('#content').animate({'top' : '30%', 'bottom' : 0});
+				$('#content').css({'color' : 'black', 'background' : 'white'});
+				$('a.back').css('border-right-color', 'black');
+				$('a.forward').css('border-left-color', 'black');
+				$('a.down').css({'display' : 'block', 'border-top-color' : 'black'});
+			});
+			
+			
+			$('a.down').click(function(e) {
+				e.preventDefault();
+				$('a.down').css('display', 'none');
+				$('#content').animate({'bottom' : '30%', 'top' : 0});
+				$('#content').css({'color' : 'white', 'background' : 'black'});
+				$('a.back').css('border-right-color', 'white');
+				$('a.forward').css('border-left-color', 'white');
+				$('a.up').css({'display' : 'block', 'border-bottom-color' : 'white'});
+			});
+			
+			function shiftContent(offsetMod) {
+				offset += offsetMod;
+				if (offset > 0) {
+					offset = 0;
+				} else if (offset < (($contents.length - 1) * -1)){
+					offset = ($contents.length - 1) * -1;
+				}
+				$contents.each(function (ix, element) {
+						$element = $(element);
+						$element.css({ 'position' : 'absolute' , 'margin-left' : (100 * (ix + offset) + '%')});
+				});
+				if (offset == 0) {
+					$('a.back').css('display', 'none');
+					clearTimeout(timeoutId);
+				} else {
+					$('a.back').css('display', 'block');
+				} 
+				if (offset == (($contents.length - 1) * -1)){
+					$('a.forward').css('display', 'none');
+					clearTimeout(timeoutId);
+				} else {
+					$('a.forward').css('display', 'block');
+				}
+			}
+			
+			shiftContent(0);
+			
+			$('#content').css('overflow-x', 'hidden');
+		});
+	</script>
+</head>
+<body>
+	<div id="clouds" data-layer-speed="2">
+	</div>
+	<div id="skyline" data-layer-speed="-30">
+	</div>
+	
+	<div id="subway" data-layer-speed="5">
+	</div>
+	<div id="people" data-layer-speed="60">
+	</div>
+	<div id="content">
+		<div>
+			<h2>Lorem ipsum dolor</h2>
+			<p>Sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt.</p>
+		</div>
+		<div>
+			<h2>Maecenas tempus</h2>
+			<p>Tellus eget condimentum rhoncus, sem quam semper libero, sit amet adipiscing sem neque sed ipsum. Nam quam nunc, blandit vel, luctus pulvinar, hendrerit id, lorem. Maecenas nec odio et ante tincidunt tempus. Donec vitae sapien ut libero venenatis faucibus. Nullam quis ante. Etiam sit amet orci eget eros faucibus tincidunt. Duis leo. Sed fringilla mauris sit amet nibh. Donec sodales sagittis magna. Sed consequat, leo eget bibendum sodales, augue velit cursus nunc.</p>
+		</div>
+		<div>
+			<h2>Aenean vulputate</h2>
+			<p>Eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitu.</p>
+		</div>
+	</div>
+
+	<a class="back"></a>
+	<a class="forward"></a>
+	<a class="down"></a>
+	<a class="up"></a>
+	
+</body>
+</html>

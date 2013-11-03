@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style>
+		html,body{
+			margin: 0;
+			padding:0;
+			font-family: monospace, Courier;
+			height: 100%;
+			width: 100%;
+			overflow:hidden;
+		}
+		
+		div {
+			position: absolute;
+		}
+		
+		.sand {
+			background-color: brown;
+		}
+		
+		#player {
+			width: 32px;
+			height: 32px;
+			display: block;
+			background: url('./game/sprite_michi_32.png');
+		}
+		
+		#ground1 {
+			width: 400px;
+			height: 64px;
+			bottom: 0px;
+		}
+		
+		#ground2 {
+			width: 1200px;
+			height: 80px;
+			left: 500px;
+			bottom: 0px;
+		}
+		
+		#wall1 {
+			width:40px;
+			height:60px;
+			bottom: 64px;
+		}
+		
+		#gameOverLay {
+			position: absolute;
+			display:block;
+			width: 100%;
+			height: 100%;
+			color: #ffffff;
+			background: #000000;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			z-index: 100;
+		}
+		
+		#gameOverLay .message {
+			display: block;
+			position: absolute;
+			top: 50%;
+			margin: 0 auto;
+			width: 100%;
+			text-align: center;
+		}
+		
+	</style>
+	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+	
+</head>
+<body>
+	<div id="gameOverLay">
+		<span class="message">Game Over</span>
+	</div>
+	
+	<div id="wall1" class="solid sand">
+	</div>
+	<div id="ground1" class="solid sand">
+	</div>
+	<div id="ground2" class="solid sand">
+	</div>
+	<script type="text/javascript">
+		window.requestAnimationFrame =
+			window.requestAnimationFrame ||
+			window.webkitRequestAnimationFrame ||
+			window.mozRequestAnimationFrame ||
+			window.oRequestAnimationFrame ||
+			window.msRequestAnimationFrame ||
+			function(callback) {
+				window.setTimeout(callback, 1000/60);
+			};
+		var Settings = { 
+			movement_speed : 200,
+			falling_speed : 300,
+			jump_height : 100,
+			jump_speed :200
+		};
+		function ElementPosition(x, y, w, h) {
+			this.x = x;
+			this.y = y;
+			this.width = w;
+			this.height = h;
+		}
+		var Key = function () {
+			this.velocity = 0;
+			this.pressed = false;
+		}
+		var duck = new Key(), left = new Key(), right = new Key(), jump = new Key(), enter = new Key();
+		document.addEventListener('keydown', function(event) {
+			if(event.keyCode == 32) {
+				event.preventDefault();
+				console.log("JUMP start");
+				jump.pressed = true;
+			} else if(event.keyCode == 37) {
+				event.preventDefault();
+				console.log("LEFT start");
+				left.pressed = true;
+			} else if(event.keyCode == 39) {
+				event.preventDefault();
+				console.log("RIGHT start");
+				right.pressed = true;
+			} else if(event.keyCode == 40) {
+				event.preventDefault();
+				console.log("RIGHT start");
+				duck.pressed = true;
+			} else if(event.keyCode == 13) {
+				event.preventDefault();
+				console.log("ENTER start");
+				enter.pressed = true;
+			}
+		});
+		document.addEventListener('keyup', function(event) {
+			if(event.keyCode == 32) {
+				event.preventDefault();
+				console.log("JUMP stop");
+				jump.pressed = false;
+			} else if(event.keyCode == 37) {
+				event.preventDefault();
+				console.log("LEFT stop");
+				left.pressed = false;
+			} else if(event.keyCode == 39) {
+				event.preventDefault();
+				console.log("RIGHT stop");
+				right.pressed = false;
+			} else if(event.keyCode == 40) {
+				event.preventDefault();
+				console.log("DUCK stop");
+				duck.pressed = false;
+			} else if(event.keyCode == 13) {
+				event.preventDefault();
+				console.log("ENTER stop");
+				enter.pressed = false;
+			}
+		});
+		
+		function gameOver() {
+			player.div.remove();
+			player = null;
+			$('#gameOverLay').css('display' , 'block');
+		}
+		
+		var Player = function() {
+			this.div = $('<div id="player" class="walking"></div>');
+			$('body').append(this.div);
+			this.name = "Michael";
+			this.position = new ElementPosition(50, 300, this.div.width(), this.div.height());
+			this.jumping = { limit : 0, velocity : 0 };
+			this.running = { left : 0, right : 0 };
+			this.deathhold = 0;
+			this.standing = true;
+			this.animation = { cycle : 0 , type : 'idle' , speed : 0}
+			this.update = function (seconds) {
+				this.input (seconds);
+				this.move(seconds);
+				this.fall(seconds);
+				this.die(seconds);
+				render(this);
+			};
+			this.input = function(seconds) {
+				if (jump.pressed) {
+					if (!this.jumping.velocity && this.standing) {
+						this.jumping.landing = false;
+						this.jumping.velocity = 1.0;
+					}
+				} else if (this.jumping.velocity > 0.5) {
+					this.jumping.velocity = 0.5;
+				}
+				if (right.pressed) {
+					if (this.running.right < 1.0) {
+						this.running.right += seconds;
+					}
+				} else if (this.running.right > 0.0) {
+					this.running.right -= seconds * 4;
+					if (this.running.right < 0.0) {
+						this.running.right = 0;
+					}
+				}
+				if (left.pressed) {
+					if (this.running.left < 1.0) {
+						this.running.left += seconds;
+					}
+				} else if (this.running.left > 0.0) {
+					this.running.left -= seconds * 4;
+					if (this.running.left < 0.0) {
+						this.running.left = 0;
+					}
+				}
+			}
+			this.move = function(seconds) {
+				if (this.running.right || this.running.left) {
+					var velocity = (this.running.right - this.running.left) * Settings.movement_speed * seconds;
+					var offset = 0;
+					if (velocity > 0) {
+						offset = this.position.width;
+					}
+					var moved = false;
+					do {
+						var nextX = this.position.x + velocity + offset;
+						if (nextX < 0) {
+							nextX = 0;
+						}
+						var nextY = document.height - this.position.y - (this.position.height /2);
+						var $next = $(document.elementFromPoint(nextX, nextY));
+						if ($next.is(".solid")) {
+							if (velocity > 0 ) {
+								velocity -= 1 * seconds;
+							} else{
+								velocity += 1 * seconds;
+							}
+						} else {
+							this.position.x += velocity;
+							moved = true;
+						}
+					} while (!moved && velocity > 0);
+				}
+			};
+			this.fall = function(seconds) {
+				var velocity;
+				if (this.jumping.velocity) {
+					if (!this.jumping.limit) {
+						this.jumping.limit = this.position.y + Settings.jump_height;
+					} else if (this.jumping.limit <= this.position.y) {
+						this.jumping.velocity = 0.0;
+					}
+					velocity =  (this.jumping.velocity * Settings.jump_speed * seconds) * -1;
+					this.jumping.velocity -= (2.5 * seconds);
+					if (this.jumping.velocity < 0.0) {
+						this.jumping.velocity = 0.0;
+					}
+				} else {
+					velocity =  Settings.falling_speed * seconds;
+				}
+				var offset = this.position.width;
+				var moved = false;
+				var hitGround = false;
+				do {
+					var bottomY = document.height - this.position.y + velocity;
+					var $below = $(document.elementFromPoint(this.position.x, bottomY));
+					var $belowOffset = $(document.elementFromPoint(this.position.x + offset, bottomY));
+					if ($below.is(".solid") || $belowOffset.is(".solid")) {
+						if (velocity > 0.0) {
+							velocity -= 1;
+							hitGround = true;
+						} else {
+							velocity += 1;
+						}
+					} else {
+						this.position.y -= velocity;
+						moved = true;
+					}
+				} while (!moved && velocity > 0);
+				if (hitGround) {
+					this.standing = true;
+				} else {
+					this.standing = false;
+				}
+			};
+			this.die = function(seconds) {
+				if (this.position.y < 0) {
+					this.deathhold += seconds;
+				}
+				if (this.deathhold >= 1.0) {
+					gameOver();
+				}
+			};
+		};
+		
+		var player = null;
+		var updateInput = function() {
+			if (player == null && enter.pressed) {
+				$('#gameOverLay').css('display' , 'none');
+				player = new Player();
+			}
+		}
+		var lastTimeStamp = null;
+		function render(target, seconds) {
+			if (target.div && target.div.css('display') != 'none') {
+				if (target.position) {
+					target.div.css({'bottom' : target.position.y, 'left' : target.position.x});	
+				}
+				if (target.animation) {
+					var posY = parseInt(target.animation.cycle) * 32;
+				}
+			}
+		}
+		var update = function() {
+			var seconds = 0;
+			var timeStamp = new Date().getTime();
+			if (lastTimeStamp == null) {
+				seconds = 0;
+			} else {
+				seconds = (timeStamp - lastTimeStamp) / 1000;
+			}
+			updateInput();
+			if (player != null) {
+				player.update(seconds);
+			}
+			lastTimeStamp = timeStamp;
+			requestAnimationFrame(update);
+		}
+		
+		requestAnimationFrame(update);
+	</script>
+</body>
+</html>

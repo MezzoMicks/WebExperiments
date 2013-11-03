@@ -1,0 +1,190 @@
+body {
+	margin: 0;
+	padding: 0;
+}
+
+#clouds  {
+	background: url('../img/clouds_panorama.jpg');
+	background-repeat:  repeat-x;
+	background-size: auto 100%;
+	width: 100%;
+	height: 30%;
+	margin: 0;
+	padding: 0;
+	z-index: 0;
+}
+
+#skyline {
+	background: url('../img/hh_skyline.png');
+	background-repeat:  repeat-x;
+	background-size: auto 100%;
+	width: 100%;
+	height:30%;
+	position: absolute;
+	top: 0;
+	z-index: 1;
+}
+
+
+
+#people {
+	background: url('../img/people2.png');
+	background-repeat:  repeat-x;
+	background-size: auto 100%;
+	width: 100%;
+	height: 30%;
+	position: absolute;
+	bottom: 0;
+	margin: 0;
+	padding: 0;
+	z-index: 1;
+}
+
+#subway {
+	background: url('../img/subway_panorama.jpg');
+	background-repeat:  repeat-x;
+	background-size: auto 100%;
+	width: 100%;
+	height: 30%;
+	position: absolute;
+	bottom: 0;
+	margin: 0;
+	padding: 0;
+	z-index: 0;
+}
+
+
+#upperContent{
+	max-height: 0px;
+	top: 0;
+	color: #000000;
+	background: #ffffff;
+	-webkit-transition: top 0.5s;
+	-moz-transition   : top 0.5s;
+	-o-transition     : top 0.5s;
+	transition        : top 0.5s;
+}
+
+#upperContent.active {
+	top: 30%;
+	max-height: 70%;
+}
+
+#lowerContent{
+	max-height: 0px;
+	bottom: 0;
+	color: #ffffff;
+	background: #000000;
+	-webkit-transition: bottom 0.5s;
+	-moz-transition   : bottom 0.5s;
+	-o-transition     : bottom 0.5s;
+	transition        : bottom 0.5s;
+}
+
+#lowerContent.active {
+	bottom: 30%;
+	max-height: 70%;
+}
+
+.content {
+	display: block;
+	position: absolute;
+	overflow: hidden;
+	width: 100%;
+	height: 70%;
+	max-height: 0;
+	background-color: white;
+	color: black;
+	z-index: 2;
+	-webkit-transition: max-height 0.2s;
+	-moz-transition   : max-height 0.2s;
+	-o-transition     : max-height 0.2s;
+	transition        : max-height 0.2s;
+}
+
+
+.content div {
+	max-width: 0;
+	margin: 0 auto;
+	overflow: hidden;
+	display:none;
+	-webkit-transition: max-width 0.2s;
+	-moz-transition   : max-width 0.2s;
+	-o-transition     : max-width 0.2s;
+	transition        : max-width 0.2s;
+}
+
+.content div.active {
+	max-width: 960px;
+	min-width: 320px;
+	display:  block;
+	overflow-x: hidden;
+	overflow-y: auto;
+}
+
+.content div h2 {
+	margin-top: 50px;
+	margin-left: 50px;
+	margin-right: 50px;
+}
+
+.content div p {
+	margin-left: 50px;
+	margin-right: 50px;
+	margin-bottom: 50px;
+}
+
+a.back {
+	display:block;
+	z-index: 10;
+	position: fixed;
+	top: 50%;
+	left: 5px;
+	width: 0;
+	height: 0;
+	border-top: 40px solid transparent;
+	border-right: 40px solid black;
+	border-bottom: 40px solid transparent;
+}
+
+
+a.forward {
+	display:block;
+	z-index: 10;
+	position: fixed;
+	top: 50%;
+	right: 5px;
+	width: 0;
+	height: 0;
+	border-top: 40px solid transparent;
+	border-left: 40px solid black;
+	border-bottom: 40px solid transparent;
+}
+
+
+a.up {
+	display:none;
+	z-index: 10;
+	position: fixed;
+	left: 50%;
+	top: 5px;
+	width: 0;
+	height: 0;
+	border-right: 40px solid transparent;
+	border-left: 40px solid transparent;
+	border-bottom: 40px solid black;
+}
+
+a.down {
+	display:block;
+	z-index: 10;
+	position: fixed;
+	left: 50%;
+	bottom: 5px;
+	width: 0;
+	height: 0;
+	border-right: 40px solid transparent;
+	border-left: 40px solid transparent;
+	border-top: 40px solid black;
+}
+
