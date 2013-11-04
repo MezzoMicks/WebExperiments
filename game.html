@@ -26,6 +26,15 @@
 			background: url('./game/sprite_michi_32.png');
 		}
 		
+		.looking-left {
+			-webkit-transform: scaleX(-1);
+			-moz-transform   : scaleX(-1);
+			-o-transform     : scaleX(-1);
+			transform        : scaleX(-1);
+			-ms-filter       : "FlipH";
+			filter           : FlipH;
+		}
+		
 		#ground1 {
 			width: 400px;
 			height: 64px;
@@ -72,7 +81,7 @@
 	<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 	
 </head>
-<body>
+<body id="gameboard">
 	<div id="gameOverLay">
 		<span class="message">Game Over</span>
 	</div>
@@ -93,18 +102,30 @@
 			function(callback) {
 				window.setTimeout(callback, 1000/60);
 			};
+		var $board = $('#gameboard');
 		var Settings = { 
 			movement_speed : 200,
 			falling_speed : 300,
 			jump_height : 100,
 			jump_speed :200
 		};
-		function ElementPosition(x, y, w, h) {
+		
+		function ElementPosition(x, y, width, height) {
 			this.x = x;
 			this.y = y;
-			this.width = w;
-			this.height = h;
+			this.width = width;
+			this.height = height;
+			this.orientation = 'none';
 		}
+		
+		function Animation(type, steps, speed, repeat) {
+			this.cycle = 0.0;
+			this.type = type;
+			this.steps = steps;
+			this.speed = speed;
+			this.repeat = false;
+		}
+		
 		var Key = function () {
 			this.velocity = 0;
 			this.pressed = false;
@@ -165,20 +186,20 @@
 		
 		var Player = function() {
 			this.div = $('<div id="player" class="walking"></div>');
-			$('body').append(this.div);
+			$board .append(this.div);
 			this.name = "Michael";
 			this.position = new ElementPosition(50, 300, this.div.width(), this.div.height());
 			this.jumping = { limit : 0, velocity : 0 };
 			this.running = { left : 0, right : 0 };
 			this.deathhold = 0;
 			this.standing = true;
-			this.animation = { cycle : 0 , type : 'idle' , speed : 0}
+			this.animation = null;
 			this.update = function (seconds) {
 				this.input (seconds);
 				this.move(seconds);
 				this.fall(seconds);
 				this.die(seconds);
-				render(this);
+				render(this, seconds);
 			};
 			this.input = function(seconds) {
 				if (jump.pressed) {
@@ -190,6 +211,10 @@
 					this.jumping.velocity = 0.5;
 				}
 				if (right.pressed) {
+					if (!this.animation || !this.animation.type == 'running') {
+						this.position.orientation = 'right';
+						this.animation = new Animation('running', 2, 0.25, true);
+					}
 					if (this.running.right < 1.0) {
 						this.running.right += seconds;
 					}
@@ -197,16 +222,22 @@
 					this.running.right -= seconds * 4;
 					if (this.running.right < 0.0) {
 						this.running.right = 0;
+						this.animation = null;
 					}
 				}
 				if (left.pressed) {
+					if (!this.animation || !this.animation.type == 'running') {
+						this.position.orientation = 'left';
+						this.animation = new Animation('running', 2, 0.25, true);
+					}
 					if (this.running.left < 1.0) {
-						this.running.left += seconds;
+						this.running.left += seconds;;
 					}
 				} else if (this.running.left > 0.0) {
 					this.running.left -= seconds * 4;
 					if (this.running.left < 0.0) {
 						this.running.left = 0;
+						this.animation = null;
 					}
 				}
 			}
@@ -223,7 +254,7 @@
 						if (nextX < 0) {
 							nextX = 0;
 						}
-						var nextY = document.height - this.position.y - (this.position.height /2);
+						var nextY = $board.height() - this.position.y - 1;
 						var $next = $(document.elementFromPoint(nextX, nextY));
 						if ($next.is(".solid")) {
 							if (velocity > 0 ) {
@@ -258,7 +289,7 @@
 				var moved = false;
 				var hitGround = false;
 				do {
-					var bottomY = document.height - this.position.y + velocity;
+					var bottomY = $board.height() - this.position.y + velocity;
 					var $below = $(document.elementFromPoint(this.position.x, bottomY));
 					var $belowOffset = $(document.elementFromPoint(this.position.x + offset, bottomY));
 					if ($below.is(".solid") || $belowOffset.is(".solid")) {
@@ -298,13 +329,36 @@
 		}
 		var lastTimeStamp = null;
 		function render(target, seconds) {
-			if (target.div && target.div.css('display') != 'none') {
+			var div = target.div;
+			if (div && div.css('display') != 'none') {
 				if (target.position) {
-					target.div.css({'bottom' : target.position.y, 'left' : target.position.x});	
+					div.css({'bottom' : target.position.y, 'left' : target.position.x});
+					var orientationClass = "looking-" + target.position.orientation;
+					if (!div.hasClass(orientationClass)) {
+						div.removeClass (function (index, css) {
+							return (css.match (/\blooking-\S+/g) || []).join(' ');
+						});
+						div.addClass(orientationClass);
+					}
 				}
-				if (target.animation) {
-					var posY = parseInt(target.animation.cycle) * 32;
+				var animation = target.animation;
+				console.log(animation);
+				if (animation) {
+					animation.cycle += seconds
+					var cycle =  animation.cycle / animation.speed;
+					console.log(cycle);
+					var posX = 0;
+					if (cycle >= (animation.steps)) {
+						animation.cycle = 0;
+						posX = 0;
+					} else {
+						posX = parseInt(cycle) * -32;
+					}
+					div.css('background-position-x', posX);
+				} else {
+					div.css('background-position-x', 0);
 				}
+				
 			}
 		}
 		var update = function() {
@@ -320,7 +374,8 @@
 				player.update(seconds);
 			}
 			lastTimeStamp = timeStamp;
-			requestAnimationFrame(update);
+			// to reduce cpu-usage, we wait 10 millis for the next update
+			setTimeout(function () { requestAnimationFrame(update);}, 10);
 		}
 		
 		requestAnimationFrame(update);
