@@ -17,13 +17,25 @@
 		
 		.sand {
 			background-color: brown;
+			background-image: url('game/tiles_terrain2.png');
+			background-position: 0 -32px;
 		}
+		.grass {
+			background-color: green;
+			background-image: url('game/tiles_terrain2.png');
+			background-position: 0 0;
+		}
+		.block {
+			width: 32px;
+			height: 32px;
+		}
+		
 		
 		#player {
 			width: 32px;
 			height: 32px;
 			display: block;
-			background: url('./game/sprite_michi_32.png');
+			background-image: url('./game/sprite_michi_32.png');
 		}
 		
 		.looking-left {
@@ -34,26 +46,7 @@
 			-ms-filter       : "FlipH";
 			filter           : FlipH;
 		}
-		
-		#ground1 {
-			width: 400px;
-			height: 64px;
-			bottom: 0px;
-		}
-		
-		#ground2 {
-			width: 1200px;
-			height: 80px;
-			left: 500px;
-			bottom: 0px;
-		}
-		
-		#wall1 {
-			width:40px;
-			height:60px;
-			bottom: 64px;
-		}
-		
+
 		#gameOverLay {
 			position: absolute;
 			display:block;
@@ -85,13 +78,8 @@
 	<div id="gameOverLay">
 		<span class="message">Game Over</span>
 	</div>
-	
-	<div id="wall1" class="solid sand">
-	</div>
-	<div id="ground1" class="solid sand">
-	</div>
-	<div id="ground2" class="solid sand">
-	</div>
+	<script type="text/javascript" src="game/js/player.js">
+	</script>
 	<script type="text/javascript">
 		window.requestAnimationFrame =
 			window.requestAnimationFrame ||
@@ -106,9 +94,58 @@
 		var Settings = { 
 			movement_speed : 200,
 			falling_speed : 300,
-			jump_height : 100,
+			jump_height : 240,
 			jump_speed :200
 		};
+		
+		function Map(file) {
+			//var txtFile = new XMLHttpRequest();
+			//txtFile.open("GET", "game/map/" + file + ".txt", true);
+			var input = "\n" //
+			+ "\n                     "  //
+			+ "\n                     "  //
+			+ "\n                     "  //
+			+ "\n                     "  //
+			+ "\n       s             "  //
+			+ "\n       s               gggg"  //
+			+ "\n                ggg    ssss "  //
+			+ "\nggggggggggggg  ggsggg  ssss"  //
+			+ "\nsssssssssssss  ssssss  ssss"  //
+			+ "\nsssssssssssss  ssssss  ssss"  //
+			+ "\nsssssssssssss  ssssss  ssss"  //
+			;
+			var lines = input.split('\n');
+			var html = "";
+			var refBlock = $('<div id="reference" class="block">');
+			$('body').append(refBlock);
+			var height = refBlock.height();
+			var width = refBlock.width();
+			refBlock.remove();
+			for (var i=0; i < lines.length; i++) { 		
+				var top = i * height;
+				for (var n=0; n < lines[i].length; n++) {	
+					var left = n * width;
+					var classes = null;
+					var ch = lines[i].charAt(n) ;
+					if (ch == 's') {
+						classes = 'solid sand block';
+					} else if (ch == 'g') {
+						classes = 'solid grass block';
+					}
+					if (classes != null) {
+						html += '<div class="' + classes;
+						html += '" style="';
+						html += 'left:' + left + 'px';
+						html += ';top:' + top + 'px';
+						html += '" />';
+					}
+				}
+			}
+			console.log(html);
+			$('body').append(html);
+		}
+		
+		new Map('level1');
 		
 		function ElementPosition(x, y, width, height) {
 			this.x = x;
@@ -118,12 +155,13 @@
 			this.orientation = 'none';
 		}
 		
-		function Animation(type, steps, speed, repeat) {
+		function Animation(type, steps, speed, repeat, successor) {
 			this.cycle = 0.0;
 			this.type = type;
 			this.steps = steps;
-			this.speed = speed;
-			this.repeat = false;
+			this.speed = speed != null ? speed : 0.5;
+			this.repeat = repeat != null ? repeat : true;
+			this.successor = successor;
 		}
 		
 		var Key = function () {
@@ -184,142 +222,6 @@
 			$('#gameOverLay').css('display' , 'block');
 		}
 		
-		var Player = function() {
-			this.div = $('<div id="player" class="walking"></div>');
-			$board .append(this.div);
-			this.name = "Michael";
-			this.position = new ElementPosition(50, 300, this.div.width(), this.div.height());
-			this.jumping = { limit : 0, velocity : 0 };
-			this.running = { left : 0, right : 0 };
-			this.deathhold = 0;
-			this.standing = true;
-			this.animation = null;
-			this.update = function (seconds) {
-				this.input (seconds);
-				this.move(seconds);
-				this.fall(seconds);
-				this.die(seconds);
-				render(this, seconds);
-			};
-			this.input = function(seconds) {
-				if (jump.pressed) {
-					if (!this.jumping.velocity && this.standing) {
-						this.jumping.landing = false;
-						this.jumping.velocity = 1.0;
-					}
-				} else if (this.jumping.velocity > 0.5) {
-					this.jumping.velocity = 0.5;
-				}
-				if (right.pressed) {
-					if (!this.animation || !this.animation.type == 'running') {
-						this.position.orientation = 'right';
-						this.animation = new Animation('running', 2, 0.25, true);
-					}
-					if (this.running.right < 1.0) {
-						this.running.right += seconds;
-					}
-				} else if (this.running.right > 0.0) {
-					this.running.right -= seconds * 4;
-					if (this.running.right < 0.0) {
-						this.running.right = 0;
-						this.animation = null;
-					}
-				}
-				if (left.pressed) {
-					if (!this.animation || !this.animation.type == 'running') {
-						this.position.orientation = 'left';
-						this.animation = new Animation('running', 2, 0.25, true);
-					}
-					if (this.running.left < 1.0) {
-						this.running.left += seconds;;
-					}
-				} else if (this.running.left > 0.0) {
-					this.running.left -= seconds * 4;
-					if (this.running.left < 0.0) {
-						this.running.left = 0;
-						this.animation = null;
-					}
-				}
-			}
-			this.move = function(seconds) {
-				if (this.running.right || this.running.left) {
-					var velocity = (this.running.right - this.running.left) * Settings.movement_speed * seconds;
-					var offset = 0;
-					if (velocity > 0) {
-						offset = this.position.width;
-					}
-					var moved = false;
-					do {
-						var nextX = this.position.x + velocity + offset;
-						if (nextX < 0) {
-							nextX = 0;
-						}
-						var nextY = $board.height() - this.position.y - 1;
-						var $next = $(document.elementFromPoint(nextX, nextY));
-						if ($next.is(".solid")) {
-							if (velocity > 0 ) {
-								velocity -= 1 * seconds;
-							} else{
-								velocity += 1 * seconds;
-							}
-						} else {
-							this.position.x += velocity;
-							moved = true;
-						}
-					} while (!moved && velocity > 0);
-				}
-			};
-			this.fall = function(seconds) {
-				var velocity;
-				if (this.jumping.velocity) {
-					if (!this.jumping.limit) {
-						this.jumping.limit = this.position.y + Settings.jump_height;
-					} else if (this.jumping.limit <= this.position.y) {
-						this.jumping.velocity = 0.0;
-					}
-					velocity =  (this.jumping.velocity * Settings.jump_speed * seconds) * -1;
-					this.jumping.velocity -= (2.5 * seconds);
-					if (this.jumping.velocity < 0.0) {
-						this.jumping.velocity = 0.0;
-					}
-				} else {
-					velocity =  Settings.falling_speed * seconds;
-				}
-				var offset = this.position.width;
-				var moved = false;
-				var hitGround = false;
-				do {
-					var bottomY = $board.height() - this.position.y + velocity;
-					var $below = $(document.elementFromPoint(this.position.x, bottomY));
-					var $belowOffset = $(document.elementFromPoint(this.position.x + offset, bottomY));
-					if ($below.is(".solid") || $belowOffset.is(".solid")) {
-						if (velocity > 0.0) {
-							velocity -= 1;
-							hitGround = true;
-						} else {
-							velocity += 1;
-						}
-					} else {
-						this.position.y -= velocity;
-						moved = true;
-					}
-				} while (!moved && velocity > 0);
-				if (hitGround) {
-					this.standing = true;
-				} else {
-					this.standing = false;
-				}
-			};
-			this.die = function(seconds) {
-				if (this.position.y < 0) {
-					this.deathhold += seconds;
-				}
-				if (this.deathhold >= 1.0) {
-					gameOver();
-				}
-			};
-		};
-		
 		var player = null;
 		var updateInput = function() {
 			if (player == null && enter.pressed) {
@@ -349,14 +251,18 @@
 					console.log(cycle);
 					var posX = 0;
 					if (cycle >= (animation.steps)) {
-						animation.cycle = 0;
-						posX = 0;
+						if (!animation.repeat) {
+							target.animation = animation.successor;
+						} else {
+							animation.cycle = 0;
+							posX = 0;
+						}
 					} else {
 						posX = parseInt(cycle) * -32;
 					}
-					div.css('background-position-x', posX);
+					div.css('background-position', posX + 'px 0');
 				} else {
-					div.css('background-position-x', 0);
+					div.css('background-position', '0 0');
 				}
 				
 			}
